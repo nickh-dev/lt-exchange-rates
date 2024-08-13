@@ -1,8 +1,6 @@
-Homework assignment details:
+# Task: exchange rate portal.
 
-Task: exchange rate portal.
-
-Write a web application with such functionality:
+## Write a web application with such functionality:
 
 1. Central bank exchange rates page. Exchange rates from the Bank of Lithuania are displayed here: http://www.lb.lt/webservices/FxRates/
 
