@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exchange Rate Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>Exchange Rate Portal</h1>
+
+<h2>Latest Exchange Rates</h2>
+<div id="exchangeRates">
+  <!-- Exchange rates will be displayed here -->
+</div>
+
+<h2>Currency List</h2>
+<select id="currencySelect">
+  <!-- Options will be populated dynamically -->
+</select>
+<button onclick="fetchExchangeRates()">Show Rates</button>
+
+<h2>Exchange Rate History</h2>
+<canvas id="exchangeRateChart" width="400" height="200"></canvas>
+
+<h2>Currency Calculator</h2>
+<input type="number" id="amount" placeholder="Amount" />
+<select id="targetCurrencySelect">
+  <!-- Options will be populated dynamically -->
+</select>
+<button onclick="calculate()">Convert</button>
+<div id="calculatedAmount"></div>
+
+<script>
+  // Fetch and display the latest exchange rates
+  function fetchLatestExchangeRates() {
+      fetch('/api/exchange-rates')
+          .then(response => response.json())
+          .then(data => {
+              const exchangeRatesDiv = document.getElementById('exchangeRates');
+              exchangeRatesDiv.innerHTML = ''; // Clear existing content
+              data.forEach(rate => {
+                  const rateElem = document.createElement('div');
+                  rateElem.textContent = `Currency: ${rate.currencyCode}, Rate: ${rate.rate}`;
+                  exchangeRatesDiv.appendChild(rateElem);
+              });
+          });
+  }
+
+  // Fetch all currencies and populate the dropdown
+  fetch('/api/currencies')
+      .then(response => response.json())
+      .then(data => {
+          const currencySelect = document.getElementById('currencySelect');
+          const targetCurrencySelect = document.getElementById('targetCurrencySelect');
+          data.forEach(currency => {
+              const option = document.createElement('option');
+              option.value = currency.code;
+              option.textContent = `${currency.code} - ${currency.name}`;
+              currencySelect.appendChild(option);
+
+              const targetOption = option.cloneNode(true);
+              targetCurrencySelect.appendChild(targetOption);
+          });
+      });
+
+  // Fetch exchange rates and display them in a chart
+  function fetchExchangeRates() {
+      const currencyCode = document.getElementById('currencySelect').value;
+      fetch(`/api/exchange-rates?currencyCode=${currencyCode}&dateFrom=2024-01-01&dateTo=2024-12-31`)
+          .then(response => response.json())
+          .then(data => {
+              const labels = data.map(rate => rate.date);
+              const rates = data.map(rate => rate.rate);
+
+              const ctx = document.getElementById('exchangeRateChart').getContext('2d');
+              new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                      labels: labels,
+                      datasets: [{
+                          label: `Exchange Rate (${currencyCode})`,
+                          data: rates,
+                          borderColor: 'rgba(75, 192, 192, 1)',
+                          borderWidth: 2
+                      }]
+                  }
+              });
+          });
+  }
+
+  // Calculate currency conversion
+  function calculate() {
+      const amount = document.getElementById('amount').value;
+      const currencyCode = document.getElementById('targetCurrencySelect').value;
+      fetch(`/api/exchange-rates?currencyCode=${currencyCode}&dateFrom=2024-01-01&dateTo=2024-12-31`)
+          .then(response => response.json())
+          .then(data => {
+              if (data.length > 0) {
+                  const rate = data[data.length - 1].rate; // Use the most recent rate
+                  const convertedAmount = amount * rate;
+                  document.getElementById('calculatedAmount').textContent = `Converted Amount: ${convertedAmount.toFixed(2)} ${currencyCode}`;
+              } else {
+                  document.getElementById('calculatedAmount').textContent = 'Exchange rate not available';
+              }
+          });
+  }
+
+  // Initial load of latest exchange rates
+  fetchLatestExchangeRates();
+</script>
+</body>
+</html>
